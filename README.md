@@ -1,65 +1,86 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+## Multi-Domain Laravel Application by Salim Albadi
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This project is a dimo for rum Multi-Domain in same back-end using Laravel framework. 
 
-## About Laravel
+migration and Modal that will save your domain info in databse. 
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+ public function up()
+    {
+        Schema::create('domains', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+    }
+    
+for me its only need name of domain for this Demo.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+then create Middleware File to check if domain register in your databse
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+<?php
 
-## Learning Laravel
+namespace App\Http\Middleware;
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+use Closure;
+use Illuminate\Http\Request;
+use App\Models\Domain;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+class VerifiedDomain {
 
-## Laravel Sponsors
+    protected $Domain;
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+    public function handle($request, Closure $next){
 
-### Premium Partners
+        $domain = $_SERVER['SERVER_NAME'];
+        $Domain = Domain::where('name', $domain)->first();
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[CMS Max](https://www.cmsmax.com/)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
+        if(!$Domain){ throw new NotFoundHttpException; }
 
-## Contributing
+        $Site = $Domain->name;
+        if(!$Site){
+            throw new NotFoundHttpException;
+        }
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+        $this->Domain = $Domain;
 
-## Code of Conduct
+        
+        return $next($request);
+    }
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+    public function getDomain(){
+        return $this->Domain;
+    }
 
-## Security Vulnerabilities
+    public function getSite(){
+      
+        return $this->Domain->name;
+    }
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+}
 
-## License
+if domain not in your database it will show not find 404 page, (you can do some logic also here for example if the owner of the domain is a subscriber and his account is activated, if you are selling a service).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# laravel-multi-domain
+After that we add this to http kernel file:
+
+ protected $routeMiddleware = [
+        //other stuff...
+        'domain.verify' => 'App\Http\Middleware\VerifiedDomain',
+    ];
+
+Finally you can implement this in a route in various scenarios.
+
+Route::group(['domain' => '127.0.0.1'], function(){
+    Route::get('/', function(){ return 'this is the main domain page'; });
+});
+
+Route::group(['domain' => 'sup.127.0.0.1'], function(){
+    Route::get('/', function(){ return 'this is sup-domain page'; });
+});
+
+Route::group(['domain' => '{all}'], function(){
+   
+    Route::get('/', function(){ return 'this is domain route to your back-end ';})->where('all', '.*')->middleware('domain.verify');
+
+});
+
