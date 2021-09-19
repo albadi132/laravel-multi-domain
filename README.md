@@ -4,6 +4,7 @@ This project is a dimo for rum Multi-Domain in same back-end using Laravel frame
 
 migration and Modal that will save your domain info in databse. 
 
+```
  public function up()
     {
         Schema::create('domains', function (Blueprint $table) {
@@ -12,11 +13,13 @@ migration and Modal that will save your domain info in databse.
             $table->timestamps();
         });
     }
-    
+ ```  
+ 
 for me its only need name of domain for this Demo.
 
 then create Middleware File to check if domain register in your databse
 
+```
 <?php
 
 namespace App\Http\Middleware;
@@ -59,17 +62,22 @@ class VerifiedDomain {
 
 }
 
+```
+
 if domain not in your database it will show not find 404 page, (you can do some logic also here for example if the owner of the domain is a subscriber and his account is activated, if you are selling a service).
 
 After that we add this to http kernel file:
 
+```
  protected $routeMiddleware = [
         //other stuff...
         'domain.verify' => 'App\Http\Middleware\VerifiedDomain',
     ];
+ ```
 
 Finally you can implement this in a route in various scenarios.
 
+```
 Route::group(['domain' => '127.0.0.1'], function(){
     Route::get('/', function(){ return 'this is the main domain page'; });
 });
@@ -83,4 +91,5 @@ Route::group(['domain' => '{all}'], function(){
     Route::get('/', function(){ return 'this is domain route to your back-end ';})->where('all', '.*')->middleware('domain.verify');
 
 });
+```
 
